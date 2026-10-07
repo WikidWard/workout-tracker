@@ -122,6 +122,14 @@ function render(){
 function renderWorkout(){
   const p=currentProgramme(), d=currentDay();
   document.getElementById("workoutTitle").textContent=d?`${p.name} — ${d.name}`:"No workout";
+  const lastWorkout = data.sessions
+    .slice()
+    .sort((a,b)=>b.date.localeCompare(a.date))[0];
+
+  document.getElementById("lastWorkout").textContent =
+    lastWorkout ? `${lastWorkout.programmeName} — ${lastWorkout.dayName}` : "No previous workout";
+
+  
   const dateInput=document.getElementById("workoutDate");
   if(!dateInput.value) dateInput.value=today();
   if(!d){ document.getElementById("exerciseList").innerHTML="<div class='card'>Create a programme first.</div>"; return; }
