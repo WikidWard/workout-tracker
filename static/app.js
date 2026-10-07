@@ -68,13 +68,11 @@ function displayWeight(value){
 }
 function applyProgression(base, rule){
   if(base==="" || base===null || base===undefined) return base;
-  if(String(base).trim().toUpperCase()==="BW") return "BW";
+  if(String(base).trim().toUpperCase()==="BW") return "";
   const n=Number(base);
   if(Number.isNaN(n)) return base;
-  if(rule==="inc2.5") return n+2.5;
-  if(rule==="inc5") return n+5;
-  if(rule==="dec2.5") return Math.max(0,n-2.5);
-  if(rule==="dec5") return Math.max(0,n-5);
+  if(rule==="increase") return n+2.5;
+  if(rule==="decrease") return Math.max(0,n-2.5);
   return n;
 }
 function suggestedWeight(ex){
@@ -146,10 +144,8 @@ function renderWorkout(){
         <label>Next session</label>
         <select data-progression="${key}">
           <option value="maintain" ${progression==="maintain"?"selected":""}>Maintain</option>
-          <option value="inc2.5" ${progression==="inc2.5"?"selected":""}>Increase 2.5 kg</option>
-          <option value="inc5" ${progression==="inc5"?"selected":""}>Increase 5 kg</option>
-          <option value="dec2.5" ${progression==="dec2.5"?"selected":""}>Decrease 2.5 kg</option>
-          <option value="dec5" ${progression==="dec5"?"selected":""}>Decrease 5 kg</option>
+          <option value="increase" ${progression==="increase"?"selected":""}>Increase</option>
+          <option value="decrease" ${progression==="decrease"?"selected":""}>Decrease</option>
         </select>
       </div>
       <p class="muted">Previous: ${prev===null?"No previous record":displayWeight(prev)} • Programme: ${displayWeight(ex.programWeight)}${current!==""?` • Next suggested: ${displayWeight(applyProgression(current,progression))}`:""}</p>
