@@ -418,7 +418,7 @@ document.getElementById("saveSession").onclick=saveWorkout;
 document.getElementById("newProgramme").onclick=openNewProgramme;
 document.getElementById("closeModal").onclick=closeModal;
 document.getElementById("exerciseHistorySelect").onchange=renderExerciseHistory;
-document.getElementById("installHint").onclick=()=>alert("On iPhone: open the app in Safari, tap Share, then Add to Home Screen.");
+document.getElementById("installHint").onclick=()=>alert("To install this app, open it in your phone's browser, then use the browser's menu or Share option and choose Add to Home Screen.");
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=3").catch(()=>{});
 render();
 loadExerciseLibrary().then(render);
