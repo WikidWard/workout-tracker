@@ -275,8 +275,14 @@ function programmeEditorHtml(days){
               <select data-ex-select="${i}-${j}">${exerciseOptions(e.name)}</select>
               <input data-ex-name="${i}-${j}" value="${escapeHtml(e.name)}" placeholder="Or type/edit exercise name">
             </div>
-            <input data-ex-sets="${i}-${j}" type="number" min="0" value="${e.sets??""}" aria-label="Sets">
-            <input data-ex-reps="${i}-${j}" type="number" min="0" value="${e.reps??""}" aria-label="Reps">
+            <div class="unitInput">
+              <input data-ex-sets="${i}-${j}" type="number" min="0" value="${e.sets??""}" aria-label="Sets">
+              <span>sets</span>
+            </div>
+            <div class="unitInput">
+              <input data-ex-reps="${i}-${j}" type="number" min="0" value="${e.reps??""}" aria-label="Reps">
+              <span>reps</span>
+            </div>
             <div class="weightInputRow">
               <input class="weightField" data-ex-weight="${i}-${j}" type="text" inputmode="decimal" value="${escapeHtml(e.programWeight??"")}" placeholder="kg or BW" aria-label="kg or BW">
               <button type="button" class="secondary small bwProgrammeButton" data-bw-programme="${i}-${j}">BW</button>
