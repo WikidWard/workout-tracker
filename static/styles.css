@@ -81,3 +81,15 @@ button { border:0; border-radius:8px; padding:10px 13px; font:inherit; cursor:po
 .lastWorkoutRow span:first-child {
   font-weight: 700;
 }
+.weightInputRow {
+  display: flex;
+  gap: 6px;
+}
+
+.weightInputRow input {
+  flex: 1;
+}
+
+.bwButton {
+  flex: 0 0 auto;
+}
