@@ -226,12 +226,17 @@ function renderProgrammes(){
     <p class="muted">${p.days.length} workout day${p.days.length===1?"":"s"} • ${p.days.reduce((a,d)=>a+d.exercises.length,0)} exercises</p>
     <div class="buttonRow">
       <button class="secondary small" data-edit-programme="${p.id}">Edit</button>
-      ${p.status!=="current"?`<button class="secondary small" data-activate="${p.id}">Make Current</button>`:""}
+      ${p.status!=="current"?`
+        <button class="secondary small" data-activate="${p.id}">Make Current</button>
+        <button class="secondary small" data-delete-programme="${p.id}">Delete</button>
+      `:""}
     </div>
   </div>`).join("");
   document.querySelectorAll("[data-activate]").forEach(b=>b.onclick=()=>activateProgramme(b.dataset.activate));
   document.querySelectorAll("[data-edit-programme]").forEach(b=>b.onclick=()=>openProgrammeEditor(b.dataset.editProgramme));
+  document.querySelectorAll("[data-delete-programme]").forEach(b=> b.onclick=()=>deleteProgramme(b.dataset.deleteProgramme));
 }
+
 function activateProgramme(id){
   const target=data.programmes.find(p=>p.id===id);
   if(!target) return;
@@ -242,6 +247,24 @@ function activateProgramme(id){
   document.getElementById("workoutDate").value=today();
   saveData(); render();
 }
+
+function deleteProgramme(id){
+  const programme=data.programmes.find(p=>p.id===id);
+  if(!programme || programme.status==="current") return;
+
+  const confirmed=confirm(
+    `Delete "${programme.name}"?\n\nThis will also delete the workout history recorded for this programme. This cannot be undone.`
+  );
+
+  if(!confirmed) return;
+
+  data.programmes=data.programmes.filter(p=>p.id!==id);
+  data.sessions=data.sessions.filter(s=>s.programmeId!==id);
+
+  saveData();
+  render();
+}
+
 
 function syncProgrammeEditor(days){
   days.forEach((d,i)=>{
