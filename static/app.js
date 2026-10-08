@@ -145,8 +145,14 @@ function renderWorkout(){
       <h3>${escapeHtml(ex.name)}</h3>
       <div class="exercise-note">${ex.sets} × ${ex.reps}${ex.note?` • ${escapeHtml(ex.note)}`:""}</div>
       <div class="controls">
-        <div><label>Today's weight</label><input type="text" inputmode="decimal" data-weight="${key}" placeholder="kg or BW" value="${escapeHtml(current)}"></div>
-        <div><label>Actual reps (optional)</label><input type="text" data-reps="${key}" placeholder="${ex.sets} × ${ex.reps}" value="${escapeHtml(reps)}"></div>
+      <div>
+        <label>Today's weight</label>
+        <div class="weightInputRow">
+          <input type="text" inputmode="decimal" data-weight="${key}" placeholder="kg or BW" value="${escapeHtml(current)}">
+          <button type="button" class="secondary small bwButton" data-bw="${key}">BW</button>
+        </div>
+      </div>        
+      <div><label>Actual reps (optional)</label><input type="text" data-reps="${key}" placeholder="${ex.sets} × ${ex.reps}" value="${escapeHtml(reps)}"></div>
       </div>
       <div class="progression">
         <label>Next session</label>
@@ -166,6 +172,16 @@ function renderWorkout(){
     const hint=row.querySelector(".muted");
     if(hint) hint.innerHTML=`Previous: ${previousWeight(d.exercises.find(x=>x.id===k).name)===null?"No previous record":displayWeight(previousWeight(d.exercises.find(x=>x.id===k).name))} • Programme: ${displayWeight(d.exercises.find(x=>x.id===k).programWeight)}${e.target.value!==""?` • Next suggested: ${displayWeight(applyProgression(e.target.value,progression))}`:""}`;
   }));
+  list.querySelectorAll("[data-bw]").forEach(el=>el.addEventListener("click",e=>{
+  const k=e.target.dataset.bw;
+  draftWorkout[k]??={};
+  draftWorkout[k].weight="BW";
+
+  const input=list.querySelector(`[data-weight="${k}"]`);
+  if(input) input.value="BW";
+
+  input?.dispatchEvent(new Event("input", {bubbles:true}));
+}));
   list.querySelectorAll("[data-reps]").forEach(el=>el.addEventListener("input",e=>{
     const k=e.target.dataset.reps; draftWorkout[k]??={}; draftWorkout[k].reps=e.target.value;
   }));
