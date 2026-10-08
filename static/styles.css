@@ -66,17 +66,52 @@ button { border:0; border-radius:8px; padding:10px 13px; font:inherit; cursor:po
 }
 .editorHeading { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
 .editorLabels { display:grid; grid-template-columns: minmax(220px,1fr) 65px 65px 80px minmax(120px,1fr) 70px; gap:6px; margin:10px 0 5px; font-size:.75rem; font-weight:700; color:#6b7280; }
-.exerciseEditor { display:grid; grid-template-columns: minmax(220px,1fr) 65px 65px 80px minmax(120px,1fr) 70px; gap:6px; margin-bottom:7px; align-items:start; }
+.exerciseEditor {
+  display:grid;
+  grid-template-columns: minmax(0,2fr) minmax(60px,1fr) minmax(60px,1fr) minmax(100px,1.5fr) minmax(120px,1fr) 70px;
+  gap:6px;
+  margin-bottom:7px;
+  align-items:start;
+}
+.exerciseEditor .weightInputRow {
+  display:flex;
+  gap:4px;
+  width:100%;
+}
+
+.exerciseEditor .weightInputRow .weightField {
+  flex:1;
+  min-width:0;
+}
+
+.exerciseEditor .weightInputRow .bwProgrammeButton {
+  flex:0 0 42px;
+}
 .exerciseNameFields { display:grid; gap:5px; }
 .buttonRow { display:flex; gap:6px; flex-wrap:wrap; }
 .removeExercise { align-self:stretch; }
 @media (max-width:800px) {
   .editorLabels { display:none; }
-  .exerciseEditor { grid-template-columns: 1fr 65px 65px; }
-  .exerciseNameFields { grid-column:1 / -1; }
-  .exerciseEditor .weightField { grid-column:auto; }
-  .exerciseEditor [data-ex-note] { grid-column:1 / -1; }
-  .exerciseEditor .removeExercise { grid-column:1 / -1; }
+
+  .exerciseEditor {
+    grid-template-columns: minmax(0,1fr) minmax(65px,1fr) minmax(65px,1fr);
+  }
+
+  .exerciseNameFields {
+    grid-column:1 / -1;
+  }
+
+  .exerciseEditor .weightInputRow {
+    grid-column:1 / -1;
+  }
+
+  .exerciseEditor [data-ex-note] {
+    grid-column:1 / -1;
+  }
+
+  .exerciseEditor .removeExercise {
+    grid-column:1 / -1;
+  }
 }
 .lastWorkoutRow {
   margin-top: 8px;
