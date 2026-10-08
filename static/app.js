@@ -1,26 +1,151 @@
 const KEY = "workoutTrackerDataV1";
 let exerciseLibrary = [];
 
-const starterProgramme = {
-  id: crypto.randomUUID(),
-  name: "Adrian 5 x 5",
-  startDate: "2026-09-15",
-  status: "current",
-  days: [
-    { id: crypto.randomUUID(), name: "Day 1", exercises: [
-      {id:crypto.randomUUID(), name:"Dumbbell Chest Press", sets:5, reps:5, programWeight:20, note:""},
-      {id:crypto.randomUUID(), name:"Dumbbell Incline Chest Press", sets:5, reps:5, programWeight:17.5, note:""},
-      {id:crypto.randomUUID(), name:"Chest Supported Dumbbell Row", sets:5, reps:5, programWeight:22.5, note:""},
-      {id:crypto.randomUUID(), name:"Close Grip Lat Pulldown", sets:5, reps:5, programWeight:40, note:""}
-    ]},
-    { id: crypto.randomUUID(), name: "Day 2", exercises: [
-      {id:crypto.randomUUID(), name:"Dumbbell Bulgarians", sets:5, reps:5, programWeight:16, note:""},
-      {id:crypto.randomUUID(), name:"Dumbbell Goblet Squats", sets:5, reps:5, programWeight:20, note:"Elevate heels"},
-      {id:crypto.randomUUID(), name:"Dumbbell Shoulder Press", sets:5, reps:5, programWeight:12.5, note:""},
-      {id:crypto.randomUUID(), name:"Dumbbell Upright Row", sets:5, reps:5, programWeight:12.5, note:"Wide grip"}
-    ]}
-  ]
-};
+const starterProgrammes = [
+  {
+    id: "starter-full-body-3",
+    name: "Full Body - 3 Days",
+    startDate: "2026-01-01",
+    status: "archived",
+    days: [
+      {
+        id: crypto.randomUUID(),
+        name: "Day 1",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Goblet Squat", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Chest Press", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Rows", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Shoulder Press", sets:3, reps:8, programWeight:null, note:""}
+        ]
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Day 2",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Deadlift", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Incline Chest Press", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Lat Pulldown", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Lateral Raise", sets:3, reps:10, programWeight:null, note:""}
+        ]
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Day 3",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Lunges - Reverse", sets:3, reps:8, programWeight:null, note:"Each Leg"},
+          {id:crypto.randomUUID(), name:"Push Ups", sets:3, reps:10, programWeight:"BW", note:""},
+          {id:crypto.randomUUID(), name:"Seated Cable Row", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Bicep Curls", sets:3, reps:10, programWeight:null, note:""}
+        ]
+      }
+    ]
+  },
+
+  {
+    id: "starter-dumbbell",
+    name: "Full Body - 2 Days",
+    startDate: "2026-01-01",
+    status: "archived",
+    days: [
+      {
+        id: crypto.randomUUID(),
+        name: "Day 1",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Goblet Squat", sets:3, reps:10, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Chest Press", sets:3, reps:10, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Bent Over Rows", sets:3, reps:10, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Shoulder Press", sets:3, reps:10, programWeight:null, note:""}
+        ]
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Day 2",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Lunges", sets:3, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Incline Chest Press", sets:3, reps:10, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Deadlift", sets:3, reps:10, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Upright Row", sets:3, reps:10, programWeight:null, note:""}
+        ]
+      }
+    ]
+  },
+
+  {
+    id: "starter-bodyweight",
+    name: "Bodyweight",
+    startDate: "2026-01-01",
+    status: "archived",
+    days: [
+      {
+        id: crypto.randomUUID(),
+        name: "Day 1",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Push Ups", sets:3, reps:10, programWeight:"BW", note:""},
+          {id:crypto.randomUUID(), name:"Squats", sets:3, reps:15, programWeight:"BW", note:""},
+          {id:crypto.randomUUID(), name:"Glute Bridge", sets:3, reps:12, programWeight:"BW", note:""},
+          {id:crypto.randomUUID(), name:"Plank", sets:3, reps:30, programWeight:"BW", note:"Seconds"}
+        ]
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Day 2",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Pull Ups", sets:3, reps:10, programWeight:"BW", note:""},
+          {id:crypto.randomUUID(), name:"Sissy Squats", sets:3, reps:8, programWeight:"BW", note:""},
+          {id:crypto.randomUUID(), name:"Russian Twists", sets:3, reps:10, programWeight:"BW", note:""},
+          {id:crypto.randomUUID(), name:"Leg Raisers", sets:3, reps:30, programWeight:"BW", note:""}
+        ]
+      }
+    ]
+  },
+
+  {
+    id: "starter-upper-lower",
+    name: "Upper/Lower",
+    startDate: "2026-01-01",
+    status: "archived",
+    days: [
+      {
+        id: crypto.randomUUID(),
+        name: "Upper 1",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Chest Press", sets:4, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Chest Supported Rows", sets:4, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Shoulder Press", sets:3, reps:10, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Bicep Curl", sets:3, reps:10, programWeight:null, note:""}
+        ]
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Lower 1",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Goblet Squat", sets:4, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Deadlift - Romanian", sets:4, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Lunges", sets:3, reps:10, programWeight:null, note:""}
+        ]
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Upper 2",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Incline Chest Press", sets:4, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Lat Pulldown", sets:4, reps:8, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Lateral Raise", sets:3, reps:12, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Tricep Extension", sets:3, reps:10, programWeight:null, note:""}
+        ]
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "Lower 2",
+        exercises: [
+          {id:crypto.randomUUID(), name:"Bulgarian Split Squat", sets:4, reps:8, programWeight:null, note:"Each leg"},
+          {id:crypto.randomUUID(), name:"Goblet Squat", sets:3, reps:10, programWeight:null, note:""},
+          {id:crypto.randomUUID(), name:"Calf Raise", sets:3, reps:15, programWeight:null, note:""}
+        ]
+      }
+    ]
+  }
+];
 
 let data = loadData();
 let activeDayId = data.programmes.find(p=>p.status==="current")?.days[0]?.id;
@@ -28,16 +153,33 @@ let draftWorkout = {};
 
 function loadData() {
   const raw = localStorage.getItem(KEY);
+
   if (raw) {
     const parsed = JSON.parse(raw);
+
     // Keep compatibility with the first prototype.
     parsed.progression ||= {};
     parsed.sessions ||= [];
     parsed.programmes ||= [];
+
+    // Add starter programmes that are not already stored.
+    starterProgrammes.forEach(starter => {
+      if (!parsed.programmes.some(p => p.id === starter.id)) {
+        parsed.programmes.push(JSON.parse(JSON.stringify(starter)));
+      }
+    });
+
     return parsed;
   }
-  return {programmes:[starterProgramme], sessions:[], progression:{}};
+
+  // First time the app is used.
+  return {
+    programmes: JSON.parse(JSON.stringify(starterProgrammes)),
+    sessions: [],
+    progression: {}
+  };
 }
+
 function saveData(){ localStorage.setItem(KEY, JSON.stringify(data)); }
 function currentProgramme(){ return data.programmes.find(p=>p.status==="current") || data.programmes[0]; }
 function currentDay(){ return currentProgramme()?.days.find(d=>d.id===activeDayId) || currentProgramme()?.days[0]; }
