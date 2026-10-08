@@ -277,7 +277,10 @@ function programmeEditorHtml(days){
             </div>
             <input data-ex-sets="${i}-${j}" type="number" min="0" value="${e.sets??""}" aria-label="Sets">
             <input data-ex-reps="${i}-${j}" type="number" min="0" value="${e.reps??""}" aria-label="Reps">
-            <input class="weightField" data-ex-weight="${i}-${j}" type="text" inputmode="decimal" value="${escapeHtml(e.programWeight??"")}" placeholder="kg or BW" aria-label="kg or BW">
+            <div class="weightInputRow">
+              <input class="weightField" data-ex-weight="${i}-${j}" type="text" inputmode="decimal" value="${escapeHtml(e.programWeight??"")}" placeholder="kg or BW" aria-label="kg or BW">
+              <button type="button" class="secondary small bwProgrammeButton" data-bw-programme="${i}-${j}">BW</button>
+            </div>
             <input data-ex-note="${i}-${j}" value="${escapeHtml(e.note||"")}" placeholder="Notes" aria-label="Exercise notes">
             <button class="secondary small removeExercise" data-remove-ex="${i}-${j}">Remove</button>
           </div>`).join("")}
@@ -331,6 +334,13 @@ function openProgrammeEditor(programmeId){
       refreshDays();
     }
   });
+  document.getElementById("modalBody").addEventListener("click",e=>{
+  if(e.target.dataset.bwProgramme!==undefined){
+    const [i,j]=e.target.dataset.bwProgramme.split("-").map(Number);
+    const input=document.querySelector(`[data-ex-weight="${i}-${j}"]`);
+    if(input) input.value="BW";
+  }
+});
   document.getElementById("modalBody").addEventListener("change",e=>{
     if(e.target.dataset.exSelect!==undefined){
       const [i,j]=e.target.dataset.exSelect.split("-").map(Number);
