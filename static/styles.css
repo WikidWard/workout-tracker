@@ -21,10 +21,14 @@ main { padding: 12px; padding-bottom: 40px; }
     flex-direction:column;
     align-items:stretch;
   }
-}
-.row.between > div {
+  .row.between > div {
   width: 100%;
+  }
+  .row.between input {
+  width:100%;
+  }
 }
+
 .exercise h3 { margin-bottom:4px; }
 .exercise-note { font-size:.82rem; color:#6b7280; margin-bottom:10px; }
 .controls { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
