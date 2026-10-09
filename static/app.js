@@ -181,6 +181,93 @@ function loadData() {
 }
 
 function saveData(){ localStorage.setItem(KEY, JSON.stringify(data)); }
+
+function exportBackup(){
+  const backup = {
+    app: "Workout Tracker",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: data
+  };
+
+  const file = new Blob(
+    [JSON.stringify(backup, null, 2)],
+    {type: "application/json"}
+  );
+
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `workout-backup-${today()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+async function importBackup(file){
+  if(!file) return;
+
+  let backup;
+
+  try {
+    const text = await file.text();
+    backup = JSON.parse(text);
+  } catch {
+    alert("This file is not a valid backup file.");
+    return;
+  }
+
+  if(
+    backup.app !== "Workout Tracker" ||
+    backup.version !== 1 ||
+    !backup.data ||
+    !Array.isArray(backup.data.programmes) ||
+    !Array.isArray(backup.data.sessions) ||
+    typeof backup.data.progression !== "object" ||
+    backup.data.progression === null ||
+    Array.isArray(backup.data.progression)
+  ){
+    alert("The file does not contain a recognised workout backup.");
+    return;
+  }
+
+  const confirmed = confirm(
+    "Restore this backup?\n\n" +
+    "Your current programmes, workout history and progression data " +
+    "will be replaced by the data in this backup.\n\n" +
+    "Export a backup of your current data first if you want to keep it."
+  );
+
+  if(!confirmed) return;
+
+  // Preserve the current data if saving the imported data fails.
+  const previousData = localStorage.getItem(KEY);
+
+  try {
+    localStorage.setItem(KEY, JSON.stringify(backup.data));
+    data = JSON.parse(JSON.stringify(backup.data));
+
+    activeDayId = currentProgramme()?.days[0]?.id;
+    draftWorkout = {};
+
+    render();
+    alert("Backup restored successfully.");
+  } catch(error) {
+    if(previousData === null){
+      localStorage.removeItem(KEY);
+    } else {
+      localStorage.setItem(KEY, previousData);
+    }
+
+    alert("The backup could not be restored. Your previous data has been kept.");
+  }
+}
+
+
+
 function currentProgramme(){ return data.programmes.find(p=>p.status==="current") || data.programmes[0]; }
 function currentDay(){ return currentProgramme()?.days.find(d=>d.id===activeDayId) || currentProgramme()?.days[0]; }
 function today(){ return new Date().toISOString().slice(0,10); }
@@ -621,6 +708,18 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
 document.getElementById("daySelect").onchange=e=>{activeDayId=e.target.value;draftWorkout={};renderWorkout();};
 document.getElementById("saveSession").onclick=saveWorkout;
 document.getElementById("newProgramme").onclick=openNewProgramme;
+document.getElementById("exportBackup").onclick=exportBackup;
+
+document.getElementById("importBackup").onclick=()=>{
+  document.getElementById("backupFile").click();
+};
+
+document.getElementById("backupFile").onchange=async e=>{
+  const file=e.target.files[0];
+  if(file) await importBackup(file);
+  e.target.value="";
+};
+
 document.getElementById("closeModal").onclick=closeModal;
 document.getElementById("exerciseHistorySelect").onchange=renderExerciseHistory;
 document.getElementById("installHint").onclick=()=>alert("To install this app, open it in your phone's browser, then use the browser's menu or Share option and choose Add to Home Screen.");
