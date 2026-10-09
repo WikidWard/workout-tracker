@@ -6,18 +6,38 @@
   <meta name="theme-color" content="#111827">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="static/styles.css">
-  <title>Workout Tracker</title>
+  <title>AW's Workout Tracker</title>
 </head>
 <body>
 <header class="topbar">
   <div>
-    <h1>Workout Tracker</h1>
+    <h1>AW's Workout Tracker</h1>
     <div id="programmeStatus" class="muted"></div>
   </div>
   <button id="installHint" class="secondary small">Install</button>
 </header>
 
 <main>
+
+  <section id="welcomeScreen" class="card hidden">
+    <h2>Welcome to AW's Workout Tracker</h2>
+    <p>Choose a starting point for your workouts.</p>
+
+    <h3>Choose a starter program or create your own</h3>
+    <p class="muted">
+      Your workouts are saved on this device. Export a backup
+      regularly to protect your progress.
+    </p>
+
+    <button id="createOwnProgramme" class="secondary full">
+      Create my own programme
+    </button>
+    <div id="starterChoices"></div>
+
+    
+  </section>
+
+
   <nav class="tabs">
     <button class="tab active" data-screen="workout">Workout</button>
     <button class="tab" data-screen="history">History</button>
@@ -51,6 +71,7 @@
     <div class="buttonRow">
     <button id="exportBackup" class="secondary">Export backup</button>
     <button id="importBackup" class="secondary">Import backup</button>
+    <button id="resetTestData" class="secondary">Clear ALL</button>
     <input id="backupFile" type="file" accept=".json,application/json" hidden>
     </div>
     <div class="card">
