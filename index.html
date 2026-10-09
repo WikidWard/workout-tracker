@@ -48,6 +48,11 @@
   </section>
 
   <section id="historyScreen" class="screen">
+    <div class="buttonRow">
+    <button id="exportBackup" class="secondary">Export backup</button>
+    <button id="importBackup" class="secondary">Import backup</button>
+    <input id="backupFile" type="file" accept=".json,application/json" hidden>
+    </div>
     <div class="card">
       <h2>Workout History</h2>
       <div id="historyList"></div>
