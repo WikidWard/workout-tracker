@@ -147,6 +147,7 @@ const starterProgrammes = [
   }
 ];
 
+let isFirstVisit = localStorage.getItem(KEY) === null;
 let data = loadData();
 let activeDayId = data.programmes.find(p=>p.status==="current")?.days[0]?.id;
 let draftWorkout = {};
@@ -181,6 +182,45 @@ function loadData() {
 }
 
 function saveData(){ localStorage.setItem(KEY, JSON.stringify(data)); }
+
+function showWelcome() {
+  document.getElementById("welcomeScreen").classList.remove("hidden");
+  document.querySelector(".tabs").classList.add("hidden");
+
+  document.querySelectorAll(".screen").forEach(screen => {
+    screen.classList.add("hidden");
+  });
+
+  const choices = document.getElementById("starterChoices");
+
+  choices.innerHTML = starterProgrammes.map(p => `
+    <div class="card">
+      <h3>${escapeHtml(p.name)}</h3>
+      <p class="muted">${p.days.length} workout days</p>
+      <button class="primary full" data-starter="${p.id}">
+        Choose this programme
+      </button>
+    </div>
+  `).join("");
+
+  choices.querySelectorAll("[data-starter]").forEach(button => {
+    button.onclick = () => activateProgramme(button.dataset.starter);
+  });
+}
+
+function finishWelcome() {
+  isFirstVisit = false;
+  document.getElementById("welcomeScreen").classList.add("hidden");
+  document.querySelector(".tabs").classList.remove("hidden");
+
+  document.querySelectorAll(".screen").forEach(screen => {
+    screen.classList.remove("hidden");
+    screen.classList.remove("active");
+  });
+
+  document.querySelector('[data-screen="workout"]').classList.add("active");
+  document.getElementById("workoutScreen").classList.add("active");
+}
 
 function exportBackup(){
   const backup = {
@@ -467,14 +507,26 @@ function renderProgrammes(){
 }
 
 function activateProgramme(id){
-  const target=data.programmes.find(p=>p.id===id);
+  const target = data.programmes.find(p => p.id === id);
   if(!target) return;
-  data.programmes.forEach(p=>p.status=p.id===id?"current":(p.status==="draft"?"draft":"archived"));
-  target.status="current";
-  activeDayId=target.days[0]?.id;
-  draftWorkout={};
-  document.getElementById("workoutDate").value=today();
-  saveData(); render();
+
+  data.programmes.forEach(p => {
+    p.status = p.id === id ? "current" :
+      (p.status === "draft" ? "draft" : "archived");
+  });
+
+  target.status = "current";
+  activeDayId = target.days[0]?.id;
+  draftWorkout = {};
+  document.getElementById("workoutDate").value = today();
+
+  saveData();
+
+  if(isFirstVisit) {
+    finishWelcome();
+  }
+
+  render();
 }
 
 function deleteProgramme(id){
@@ -673,8 +725,28 @@ function openNewProgramme(){
       id:crypto.randomUUID(), name:d.name.trim()||`Day ${di+1}`,
       exercises:d.exercises.map(x=>({id:crypto.randomUUID(),name:x.name.trim(),sets:Number(x.sets)||0,reps:Number(x.reps)||0,programWeight:normaliseWeight(x.programWeight),note:x.note||""})).filter(x=>x.name)
     })).filter(d=>d.exercises.length);
-    const p={id:crypto.randomUUID(),name:document.getElementById("newName").value.trim()||"New Programme",startDate:document.getElementById("newDate").value||today(),status:"draft",days};
-    data.programmes.unshift(p); activeDayId=p.days[0]?.id; saveData(); closeModal(); render();
+    const p={
+      id:crypto.randomUUID(),
+      name:document.getElementById("newName").value.trim()||"New Programme",
+      startDate:document.getElementById("newDate").value||today(),
+      status:isFirstVisit ? "current" : "draft",
+      days
+    };
+    data.programmes.unshift(p);
+
+    if(isFirstVisit) {
+      data.programmes.forEach(programme => {
+        if(programme.id !== p.id && programme.status !== "draft") {
+          programme.status = "archived";
+        }
+      });
+      finishWelcome();
+    }
+
+    activeDayId=p.days[0]?.id;
+    saveData();
+    closeModal();
+    render();
   };
   renderDays();
 }
@@ -708,6 +780,7 @@ document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
 document.getElementById("daySelect").onchange=e=>{activeDayId=e.target.value;draftWorkout={};renderWorkout();};
 document.getElementById("saveSession").onclick=saveWorkout;
 document.getElementById("newProgramme").onclick=openNewProgramme;
+document.getElementById("createOwnProgramme").onclick = openNewProgramme;
 document.getElementById("exportBackup").onclick=exportBackup;
 
 document.getElementById("importBackup").onclick=()=>{
@@ -724,5 +797,23 @@ document.getElementById("closeModal").onclick=closeModal;
 document.getElementById("exerciseHistorySelect").onchange=renderExerciseHistory;
 document.getElementById("installHint").onclick=()=>alert("To install this app, open it in your phone's browser, then use the browser's menu or Share option and choose Add to Home Screen.");
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=3").catch(()=>{});
+
+document.getElementById("resetTestData").onclick = () => {
+  const confirmed = confirm(
+    "Reset the app in this browser?\n\n" +
+    "This will delete all programmes, workout history and progression " +
+    "saved by this app in this browser. Export a backup first if needed."
+  );
+
+  if(!confirmed) return;
+
+  localStorage.removeItem(KEY);
+  location.reload();
+};
+
 render();
 loadExerciseLibrary().then(render);
+
+if(isFirstVisit) {
+  showWelcome();
+}
