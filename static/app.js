@@ -322,7 +322,9 @@ function previousExerciseRecord(exerciseName){
     .sort((a,b)=>b.sessionDate.localeCompare(a.sessionDate));
   return matches[0] || null;
 }
+
 function previousWeight(exerciseName){ return previousExerciseRecord(exerciseName)?.weight ?? null; }
+
 function normaliseWeight(value){
   if(value===null || value===undefined) return null;
   const text=String(value).trim();
@@ -331,19 +333,28 @@ function normaliseWeight(value){
   const n=Number(text);
   return Number.isNaN(n) ? null : n;
 }
+
 function displayWeight(value){
   if(value===null || value===undefined || value==="") return "Not set";
   return String(value).toUpperCase()==="BW" ? "BW" : `${value} kg`;
 }
+
 function applyProgression(base, rule){
   if(base==="" || base===null || base===undefined) return base;
-  if(String(base).trim().toUpperCase()==="BW") return "";
+  if(String(base).trim().toUpperCase()==="BW") return "BW";
   const n=Number(base);
   if(Number.isNaN(n)) return base;
+  
   if(rule==="increase") return n+2.5;
-  if(rule==="decrease") return Math.max(0,n-2.5);
+  
+  if(rule==="decrease"){
+    const nextWeight=Math.max(0,n-2.5);
+    return nextWeight===0 ? "BW" : nextWeight;
+  }
+  
   return n;
 }
+
 function suggestedWeight(ex){
   const prevRecord=previousExerciseRecord(ex.name);
   const base=prevRecord?.weight ?? ex.programWeight ?? "";
