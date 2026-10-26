@@ -320,7 +320,8 @@ async function importBackup(file){
   // Preserve the current data if saving the imported data fails.
   const previousData = localStorage.getItem(KEY);
 
-  // Preserve the current data if saving the imported data fails.
+  // Save the backup to browser storage and update the app's in-memory data.
+  // If the restore fails, the catch block attempts to restore the previous stored data.
   try {
     localStorage.setItem(KEY, JSON.stringify(backup.data));
     data = JSON.parse(JSON.stringify(backup.data));
@@ -357,12 +358,9 @@ function today(){ return new Date().toISOString().slice(0,10); }
 // Using midday when parsing helps avoid dates shifting because of time zones.
 function formatDate(s){ return new Date(s+"T12:00:00").toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}); }
 
-// The last completed workout is the source for both the previous weight and
-// the progression instruction. The progression is applied ONCE to that weight
-// when preparing the next workout; it is never applied to today's actual weight.
 // Find the most recent saved record for an exercise name across all programmes.
-// The session date is attached to each matching exercise so the records can be sorted.
-// The returned record supplies both the previous weight and the previous progression choice.
+// Attach each session's date to its matching exercise record, then sort the records
+// newest first. The returned record supplies the previous weight and progression rule.
 function previousExerciseRecord(exerciseName){
   const matches = data.sessions
     .flatMap(s=>s.exercises.filter(e=>e.name===exerciseName).map(e=>({...e, sessionDate:s.date, sessionId:s.id})))
@@ -432,9 +430,10 @@ async function loadExerciseLibrary(){
     if (!response.ok) throw new Error("Exercise list unavailable");
     exerciseLibrary = await response.json();
   } catch (err) {
+    
     // When index.html is opened directly as a file, browsers may block fetch().
-    // Keep a small fallback so the editor still works; exercises.json is used
-    // automatically when the app is run through app.py.
+    // Keep a small fallback so the editor still works.
+    // When the app is served through a web server, load exercises.json instead.
     exerciseLibrary = [
       "Dumbbell Chest Press", "Dumbbell Incline Chest Press", "Chest Supported Dumbbell Row",
       "Close Grip Lat Pulldown", "Dumbbell Bulgarians", "Dumbbell Goblet Squats",
@@ -446,6 +445,7 @@ async function loadExerciseLibrary(){
       "Hammer Curl", "Tricep Pushdown", "Push Up", "Plank"
     ];
   }
+  
   // Remove duplicates and blank names, trim whitespace, and sort alphabetically.
   exerciseLibrary = [...new Set(exerciseLibrary.map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 }
