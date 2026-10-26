@@ -1,6 +1,13 @@
+// Key used to save and retrieve this user's workout data in browser storage.
+// Keep this unchanged between normal updates so existing data remains accessible.
 const KEY = "workoutTrackerDataV1";
+
+// Exercise names loaded from exercises.json and used in programme editor dropdowns.
 let exerciseLibrary = [];
 
+// Built-in starter programmes offered to new users.
+// These are copied into saved data when needed; the saved versions can then be edited
+// without changing these original templates.
 const starterProgrammes = [
   {
     id: "starter-full-body-3",
@@ -147,11 +154,17 @@ const starterProgrammes = [
   }
 ];
 
+// Initialise the app from browser storage.
+// Track whether this is the first visit, which workout day is selected, and any unsaved changes entered on the current workout screen.
 let isFirstVisit = localStorage.getItem(KEY) === null;
 let data = loadData();
 let activeDayId = data.programmes.find(p=>p.status==="current")?.days[0]?.id;
 let draftWorkout = {};
 
+// Load saved data from browser storage.
+// If data already exists, add any missing starter programmes without replacing
+// the user's existing programmes, workout history or progression settings.
+// If no saved data exists, initialise the app with copies of the starter programmes.
 function loadData() {
   const raw = localStorage.getItem(KEY);
 
@@ -163,7 +176,9 @@ function loadData() {
     parsed.sessions ||= [];
     parsed.programmes ||= [];
 
-    // Add starter programmes that are not already stored.
+    // Add only starter programmes whose IDs are not already saved.
+    // This allows new starter programmes to be introduced in future updates
+    // without overwriting a user's existing version of a programme.
     starterProgrammes.forEach(starter => {
       if (!parsed.programmes.some(p => p.id === starter.id)) {
         parsed.programmes.push(JSON.parse(JSON.stringify(starter)));
@@ -181,8 +196,11 @@ function loadData() {
   };
 }
 
+// Save the complete app data object to browser storage as JSON.
 function saveData(){ localStorage.setItem(KEY, JSON.stringify(data)); }
 
+// Display the first-visit welcome screen and hide the normal app screens.
+// Build the starter programme choices and connect each button to its programme.
 function showWelcome() {
   document.getElementById("welcomeScreen").classList.remove("hidden");
   document.querySelector(".tabs").classList.add("hidden");
@@ -208,6 +226,8 @@ function showWelcome() {
   });
 }
 
+// Complete the welcome process and display the normal app interface,
+// opening the Workout screen first.
 function finishWelcome() {
   isFirstVisit = false;
   document.getElementById("welcomeScreen").classList.add("hidden");
@@ -222,6 +242,9 @@ function finishWelcome() {
   document.getElementById("workoutScreen").classList.add("active");
 }
 
+// Export the complete saved app data as a downloadable JSON backup.
+// Include the app name, backup format version and export timestamp so the
+// file can be identified and checked when it is restored.
 function exportBackup(){
   const backup = {
     app: "Workout Tracker",
@@ -230,11 +253,13 @@ function exportBackup(){
     data: data
   };
 
+  // Convert the backup object into a downloadable JSON file.
   const file = new Blob(
     [JSON.stringify(backup, null, 2)],
     {type: "application/json"}
   );
 
+  // Create a temporary browser URL so the backup can be downloaded.
   const url = URL.createObjectURL(file);
   const link = document.createElement("a");
 
@@ -247,11 +272,16 @@ function exportBackup(){
   URL.revokeObjectURL(url);
 }
 
+// Restore app data from a selected backup file.
+// Check that the file is valid and has the expected structure before asking
+// the user to confirm replacing their current data.
 async function importBackup(file){
   if(!file) return;
 
   let backup;
 
+  // Read the selected file and parse its JSON contents.
+  // Reject unreadable or invalid JSON before making any changes.
   try {
     const text = await file.text();
     backup = JSON.parse(text);
@@ -260,6 +290,8 @@ async function importBackup(file){
     return;
   }
 
+  // Check the backup's identifying information and required data structures
+  // before allowing it to replace the current saved data.
   if(
     backup.app !== "Workout Tracker" ||
     backup.version !== 1 ||
@@ -274,6 +306,8 @@ async function importBackup(file){
     return;
   }
 
+  // Restoring a backup replaces the current data rather than merging it.
+  // Ask for confirmation because this can overwrite newer workouts and programmes.
   const confirmed = confirm(
     "Restore this backup?\n\n" +
     "Your current programmes, workout history and progression data " +
@@ -286,6 +320,7 @@ async function importBackup(file){
   // Preserve the current data if saving the imported data fails.
   const previousData = localStorage.getItem(KEY);
 
+  // Preserve the current data if saving the imported data fails.
   try {
     localStorage.setItem(KEY, JSON.stringify(backup.data));
     data = JSON.parse(JSON.stringify(backup.data));
@@ -307,15 +342,27 @@ async function importBackup(file){
 }
 
 
-
+// Return the current programme, or fall back to the first available programme
+// if none is marked as current.
 function currentProgramme(){ return data.programmes.find(p=>p.status==="current") || data.programmes[0]; }
+
+// Return the selected workout day within the current programme.
+// If the selected day is no longer available, fall back to the programme's first day.
 function currentDay(){ return currentProgramme()?.days.find(d=>d.id===activeDayId) || currentProgramme()?.days[0]; }
+
+// Return today's date as a YYYY-MM-DD string for date fields and saved sessions.
 function today(){ return new Date().toISOString().slice(0,10); }
+
+// Convert a YYYY-MM-DD date into a readable Australian date format.
+// Using midday when parsing helps avoid dates shifting because of time zones.
 function formatDate(s){ return new Date(s+"T12:00:00").toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"}); }
 
 // The last completed workout is the source for both the previous weight and
 // the progression instruction. The progression is applied ONCE to that weight
 // when preparing the next workout; it is never applied to today's actual weight.
+// Find the most recent saved record for an exercise name across all programmes.
+// The session date is attached to each matching exercise so the records can be sorted.
+// The returned record supplies both the previous weight and the previous progression choice.
 function previousExerciseRecord(exerciseName){
   const matches = data.sessions
     .flatMap(s=>s.exercises.filter(e=>e.name===exerciseName).map(e=>({...e, sessionDate:s.date, sessionId:s.id})))
@@ -323,8 +370,12 @@ function previousExerciseRecord(exerciseName){
   return matches[0] || null;
 }
 
+// Return the most recently recorded weight for an exercise, or null if none exists.
 function previousWeight(exerciseName){ return previousExerciseRecord(exerciseName)?.weight ?? null; }
 
+// Convert a weight entered by the user into a consistent stored value.
+// Numeric weights are stored as numbers, BW is stored as the text "BW",
+// and empty or invalid entries are represented by null.
 function normaliseWeight(value){
   if(value===null || value===undefined) return null;
   const text=String(value).trim();
@@ -334,19 +385,26 @@ function normaliseWeight(value){
   return Number.isNaN(n) ? null : n;
 }
 
+// Format a stored weight for display, adding "kg" to numeric values
+// while keeping bodyweight exercises labelled "BW".
 function displayWeight(value){
   if(value===null || value===undefined || value==="") return "Not set";
   return String(value).toUpperCase()==="BW" ? "BW" : `${value} kg`;
 }
 
+// Calculate the next suggested weight from a starting weight and progression rule.
+// This function calculates a suggestion; it does not change the saved workout weight.
+// Bodyweight exercises do not receive an automatic numeric weight adjustment.
 function applyProgression(base, rule){
   if(base==="" || base===null || base===undefined) return base;
   if(String(base).trim().toUpperCase()==="BW") return "BW";
   const n=Number(base);
   if(Number.isNaN(n)) return base;
-  
+
+  // Apply the standard 2.5 kg adjustment for weighted exercises.
   if(rule==="increase") return n+2.5;
-  
+
+  // Keep the result at or above zero when decreasing a weight.
   if(rule==="decrease"){
     const nextWeight=Math.max(0,n-2.5);
     return nextWeight===0 ? "BW" : nextWeight;
@@ -355,12 +413,19 @@ function applyProgression(base, rule){
   return n;
 }
 
+// Choose the starting point for the next workout's weight suggestion.
+// Prefer the most recent recorded weight; if no workout record exists,
+// use the programme's prescribed weight. Apply the last progression choice once.
 function suggestedWeight(ex){
   const prevRecord=previousExerciseRecord(ex.name);
   const base=prevRecord?.weight ?? ex.programWeight ?? "";
   const rule=prevRecord?.progression || "maintain";
   return applyProgression(base, rule);
 }
+
+// Load the exercise names from exercises.json.
+// If the file cannot be loaded, use the built-in fallback list so the programme
+// editor can still offer exercise choices.
 async function loadExerciseLibrary(){
   try {
     const response = await fetch("exercises.json", {cache:"no-store"});
@@ -381,12 +446,19 @@ async function loadExerciseLibrary(){
       "Hammer Curl", "Tricep Pushdown", "Push Up", "Plank"
     ];
   }
+  // Remove duplicates and blank names, trim whitespace, and sort alphabetically.
   exerciseLibrary = [...new Set(exerciseLibrary.map(x=>String(x).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
 }
+
+// Build the HTML options for an exercise dropdown.
+// Include the currently selected name even if it is not in the standard exercise library.
 function exerciseOptions(selected=""){
   const values = [...new Set([...exerciseLibrary, selected].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
   return `<option value="">Select exercise...</option>${values.map(n=>`<option value="${escapeHtml(n)}" ${n===selected?"selected":""}>${escapeHtml(n)}</option>`).join("")}`;
 }
+
+// Refresh the main interface using the current app data.
+// Update the programme status and workout-day selector, then refresh each screen's content.
 function render(){
   const p=currentProgramme();
   document.getElementById("programmeStatus").textContent = p ? `${p.name} • ${p.status==="current"?"Current":"Archived"}` : "No programme";
@@ -399,9 +471,15 @@ function render(){
   renderProgrammes();
   renderExerciseHistoryOptions();
 }
+
+// Build the workout screen for the selected programme and day.
+// Populate each exercise with its previous record, suggested weight and any
+// unsaved entries, then attach the input handlers used during the workout.
 function renderWorkout(){
   const p=currentProgramme(), d=currentDay();
   document.getElementById("workoutTitle").textContent=d?`${p.name} — ${d.name}`:"No workout";
+  
+  // Find the most recent session by date for the summary shown above the workout.
   const lastWorkout = data.sessions
     .slice()
     .sort((a,b)=>b.date.localeCompare(a.date))[0];
@@ -414,6 +492,9 @@ function renderWorkout(){
   if(!dateInput.value) dateInput.value=today();
   if(!d){ document.getElementById("exerciseList").innerHTML="<div class='card'>Create a programme first.</div>"; return; }
   const list=document.getElementById("exerciseList");
+  
+  // Build one interface card for each exercise in the selected workout day.
+  // Keep unsaved entries in draftWorkout so a screen refresh does not discard them.
   list.innerHTML=d.exercises.map(ex=>{
     const key=ex.id;
     const prev=previousWeight(ex.name);
@@ -445,6 +526,8 @@ function renderWorkout(){
       <p class="muted">Previous: ${prev===null?"No previous record":displayWeight(prev)} • Programme: ${displayWeight(ex.programWeight)}${current!==""?` • Next suggested: ${displayWeight(applyProgression(current,progression))}`:""}</p>
     </div>`;
   }).join("");
+  
+  // Keep the draft weight in sync with the input and update the displayed suggestion whenever the user changes today's weight.
   list.querySelectorAll("[data-weight]").forEach(el=>el.addEventListener("input",e=>{
     const k=e.target.dataset.weight; draftWorkout[k]??={}; draftWorkout[k].weight=e.target.value;
     const row=e.target.closest(".exercise");
@@ -452,6 +535,8 @@ function renderWorkout(){
     const hint=row.querySelector(".muted");
     if(hint) hint.innerHTML=`Previous: ${previousWeight(d.exercises.find(x=>x.id===k).name)===null?"No previous record":displayWeight(previousWeight(d.exercises.find(x=>x.id===k).name))} • Programme: ${displayWeight(d.exercises.find(x=>x.id===k).programWeight)}${e.target.value!==""?` • Next suggested: ${displayWeight(applyProgression(e.target.value,progression))}`:""}`;
   }));
+
+  // Set the exercise weight to BW and trigger the normal input handler so the draft and displayed suggestion are updated together.
   list.querySelectorAll("[data-bw]").forEach(el=>el.addEventListener("click",e=>{
   const k=e.target.dataset.bw;
   draftWorkout[k]??={};
@@ -462,9 +547,12 @@ function renderWorkout(){
 
   input?.dispatchEvent(new Event("input", {bubbles:true}));
 }));
+
+  // Store the actual repetitions entered for this exercise in the unsaved workout draft.
   list.querySelectorAll("[data-reps]").forEach(el=>el.addEventListener("input",e=>{
     const k=e.target.dataset.reps; draftWorkout[k]??={}; draftWorkout[k].reps=e.target.value;
   }));
+  
   list.querySelectorAll("[data-progression]").forEach(el=>el.addEventListener("change",e=>{
     const k=e.target.dataset.progression; draftWorkout[k]??={}; draftWorkout[k].progression=e.target.value;
     // Do not alter today's weight. This setting describes the change to make
@@ -476,6 +564,9 @@ function renderWorkout(){
     if(hint) hint.innerHTML=`Previous: ${previousWeight(ex.name)===null?"No previous record":displayWeight(previousWeight(ex.name))} • Programme: ${displayWeight(ex.programWeight)}${weight!==""?` • Next suggested: ${displayWeight(applyProgression(weight,e.target.value))}`:""}`;
   }));
 }
+
+// Display all saved workout sessions, newest first, including their exercises,
+// recorded weights, actual repetitions and any session notes.
 function renderHistory(){
   const box=document.getElementById("historyList");
   const sessions=[...data.sessions].sort((a,b)=>b.date.localeCompare(a.date));
@@ -485,18 +576,28 @@ function renderHistory(){
     ${s.notes?`<p class="muted">Note: ${escapeHtml(s.notes)}</p>`:""}
   </div>`).join(""):"<p class='muted'>No completed workouts yet.</p>";
 }
+
+// Build the exercise-history dropdown from the unique exercise names
+// found in saved workout sessions, then display the selected exercise's history.
 function renderExerciseHistoryOptions(){
   const names=[...new Set(data.sessions.flatMap(s=>s.exercises.map(e=>e.name)))].sort();
   const sel=document.getElementById("exerciseHistorySelect");
   sel.innerHTML=names.length?names.map(n=>`<option>${escapeHtml(n)}</option>`).join(""):"<option>No exercise history yet</option>";
   renderExerciseHistory();
 }
+
+// Display saved records for the exercise selected in the history dropdown,
+// sorted from newest to oldest.
 function renderExerciseHistory(){
   const name=document.getElementById("exerciseHistorySelect").value;
   const rows=data.sessions.flatMap(s=>s.exercises.filter(e=>e.name===name).map(e=>({date:s.date,programme:s.programmeName,day:s.dayName,...e}))).sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById("exerciseHistory").innerHTML=rows.map(r=>`<div class="historyItem">${formatDate(r.date)} — ${escapeHtml(r.programme)} — <strong>${displayWeight(r.weight)}</strong>${r.reps?` — ${escapeHtml(r.reps)}`:""}</div>`).join("") || "<p class='muted'>No records.</p>";
 }
+
+// Display all programmes, ordered by status, and connect their activate,
+// edit and delete buttons to the relevant functions.
 function renderProgrammes(){
+  // Order programmes by status: current first, drafts second, archived last.
   const sorted=[...data.programmes].sort((a,b)=>({current:0,draft:1,archived:2}[a.status]??3)-({current:0,draft:1,archived:2}[b.status]??3));
   document.getElementById("programmeList").innerHTML=sorted.map(p=>`<div class="programmeItem">
     <div class="row between">
@@ -517,10 +618,13 @@ function renderProgrammes(){
   document.querySelectorAll("[data-delete-programme]").forEach(b=> b.onclick=()=>deleteProgramme(b.dataset.deleteProgramme));
 }
 
+// Make the selected programme current and archive other non-draft programmes.
+// Reset the selected day and unsaved workout draft, save the change, and refresh the interface.
 function activateProgramme(id){
   const target = data.programmes.find(p => p.id === id);
   if(!target) return;
 
+  // Update programme statuses without converting existing drafts into archived programmes.
   data.programmes.forEach(p => {
     p.status = p.id === id ? "current" :
       (p.status === "draft" ? "draft" : "archived");
@@ -540,6 +644,8 @@ function activateProgramme(id){
   render();
 }
 
+// Delete a non-current programme after confirmation.
+// Also remove its associated workout history so the deleted programme does not leave orphaned sessions in the app.
 function deleteProgramme(id){
   const programme=data.programmes.find(p=>p.id===id);
   if(!programme || programme.status==="current") return;
@@ -557,7 +663,9 @@ function deleteProgramme(id){
   render();
 }
 
-
+// Copy the current values from the programme editor's HTML fields into the days array.
+// This must happen before rebuilding the editor, otherwise unsaved field entries
+// could be lost when a day or exercise is added or removed.
 function syncProgrammeEditor(days){
   days.forEach((d,i)=>{
     const dayName=document.querySelector(`[data-day-name="${i}"]`);
@@ -577,6 +685,10 @@ function syncProgrammeEditor(days){
     });
   });
 }
+
+// Generate the HTML for all workout days and their exercise fields.
+// The data attributes identify each day and exercise so event handlers can
+// find the correct fields when reading, updating or removing entries.
 function programmeEditorHtml(days){
   return days.map((d,i)=>`
     <div class="dayEditor">
@@ -609,11 +721,18 @@ function programmeEditorHtml(days){
       <button class="secondary small" data-add-ex="${i}">+ Exercise</button>
     </div>`).join("");
 }
+
+// Open the editor for an existing programme.
+// Work on a copy of its days until Save Programme is selected, so edits are
+// not written to the saved programme until the user confirms them.
 function openProgrammeEditor(programmeId){
   const p=data.programmes.find(x=>x.id===programmeId);
   if(!p) return;
   document.getElementById("modalTitle").textContent=`Edit Programme: ${p.name}`;
+  
+  // Make a deep copy so editing the form does not directly modify the saved programme.
   let days=JSON.parse(JSON.stringify(p.days));
+  
   document.getElementById("modalBody").innerHTML=`
     <div class="formGrid">
       <div><label>Programme name</label><input id="editName" value="${escapeHtml(p.name)}"></div>
@@ -625,15 +744,20 @@ function openProgrammeEditor(programmeId){
     <button id="saveProgramme" class="primary full">Save Programme</button>`;
   document.getElementById("modal").classList.remove("hidden");
 
+  // Read the current fields into the days array before rebuilding the editor HTML.
   const refreshDays=()=>{
     syncProgrammeEditor(days);
     document.getElementById("editDays").innerHTML=programmeEditorHtml(days);
   };
+
+  // Handle add/remove actions for days and exercises.
+  // Synchronise the existing form values first, then rebuild the HTML to reflect the change.
   document.getElementById("editAddDay").onclick=()=>{
     syncProgrammeEditor(days);
     days.push({name:`Day ${days.length+1}`,exercises:[{name:"",sets:3,reps:8,programWeight:null,note:""}]});
     refreshDays();
   };
+  
   document.getElementById("modalBody").addEventListener("click",e=>{
     if(e.target.dataset.addEx!==undefined){
       syncProgrammeEditor(days);
@@ -655,6 +779,8 @@ function openProgrammeEditor(programmeId){
       refreshDays();
     }
   });
+
+  // Set the selected programme exercise's prescribed weight to BW.
   document.getElementById("modalBody").addEventListener("click",e=>{
   if(e.target.dataset.bwProgramme!==undefined){
     const [i,j]=e.target.dataset.bwProgramme.split("-").map(Number);
@@ -662,6 +788,9 @@ function openProgrammeEditor(programmeId){
     if(input) input.value="BW";
   }
 });
+
+  // When an exercise is selected from the dropdown, copy its name into the editable
+  // text field, which still allows the user to customise the name.
   document.getElementById("modalBody").addEventListener("change",e=>{
     if(e.target.dataset.exSelect!==undefined){
       const [i,j]=e.target.dataset.exSelect.split("-").map(Number);
@@ -669,10 +798,16 @@ function openProgrammeEditor(programmeId){
       if(nameInput && e.target.value) nameInput.value=e.target.value;
     }
   });
+
+  // Collect the final form values, validate and normalise the stored fields,
+  // preserve existing IDs where possible, and save the updated programme.
   document.getElementById("saveProgramme").onclick=()=>{
     syncProgrammeEditor(days);
     p.name=document.getElementById("editName").value.trim()||p.name;
     p.startDate=document.getElementById("editDate").value||p.startDate||today();
+
+    // Preserve existing day and exercise IDs so references to those items remain stable.
+    // Generate IDs only for new items, and exclude blank exercises and empty workout days.
     p.days=days.map((d,di)=>({
       id:d.id||crypto.randomUUID(),
       name:d.name.trim()||`Day ${di+1}`,
@@ -687,6 +822,10 @@ function openProgrammeEditor(programmeId){
     saveData(); closeModal(); render();
   };
 }
+
+// Open the form for creating a new programme.
+// Build the workout days and exercises in a temporary array, then save the new
+// programme when the user confirms creation.
 function openNewProgramme(){
   document.getElementById("modalTitle").textContent="New Programme";
   let days=[];
@@ -700,12 +839,16 @@ function openNewProgramme(){
     <button id="addDay" class="secondary">+ Add Workout Day</button>
     <button id="createProgramme" class="primary full">Create Programme</button>`;
   document.getElementById("modal").classList.remove("hidden");
+  
+  // Rebuild the displayed workout-day and exercise fields from the working days array.
   const renderDays=()=>{ document.getElementById("newDays").innerHTML=programmeEditorHtml(days); };
   document.getElementById("addDay").onclick=()=>{
     syncProgrammeEditor(days);
     days.push({name:`Day ${days.length+1}`,exercises:[{name:"",sets:3,reps:8,programWeight:null,note:""}]});
     renderDays();
   };
+
+  // Handle adding and removing days and exercises while preserving existing field values.
   document.getElementById("modalBody").addEventListener("click",e=>{
     if(e.target.dataset.addEx!==undefined){
       syncProgrammeEditor(days);
@@ -730,6 +873,9 @@ function openNewProgramme(){
       if(nameInput && e.target.value) nameInput.value=e.target.value;
     }
   });
+
+  // Convert the completed form into a new programme object, assigning unique IDs
+  // to the programme, each workout day and each exercise before saving it.
   document.getElementById("createProgramme").onclick=()=>{
     syncProgrammeEditor(days);
     days=days.map((d,di)=>({
@@ -745,6 +891,8 @@ function openNewProgramme(){
     };
     data.programmes.unshift(p);
 
+    // During first-time setup, make the new programme current and finish the welcome process.
+    // Otherwise, create it as a draft so it does not replace the user's current programme.
     if(isFirstVisit) {
       data.programmes.forEach(programme => {
         if(programme.id !== p.id && programme.status !== "draft") {
@@ -761,17 +909,27 @@ function openNewProgramme(){
   };
   renderDays();
 }
+
+// Hide the programme editor modal.
 function closeModal(){document.getElementById("modal").classList.add("hidden");}
 
+// Save the current workout as a dated session.
+// Use the user's entries where provided and suggested weights otherwise,
+// then save the data, clear the draft and refresh the interface.
 function saveWorkout(){
   const p=currentProgramme(), d=currentDay();
   if(!p||!d)return;
   const workoutDate=document.getElementById("workoutDate").value||today();
+  
+  // Build the saved exercise records, normalising weights and retaining actual reps
+  // and the progression choice for the next session.
   const exercises=d.exercises.map(ex=>{
     const x=draftWorkout[ex.id]||{};
     const rawWeight=x.weight!==undefined && x.weight!=="" ? x.weight : suggestedWeight(ex);
     return {name:ex.name, weight:normaliseWeight(rawWeight), reps:x.reps||"", progression:x.progression||"maintain"};
   });
+  
+  // Add this workout to the session history with its date, programme, day and notes.
   data.sessions.push({id:crypto.randomUUID(),date:workoutDate,programmeId:p.id,programmeName:p.name,dayId:d.id,dayName:d.name,exercises,notes:document.getElementById("sessionNotes").value});
   saveData();
   draftWorkout={};
@@ -781,23 +939,35 @@ function saveWorkout(){
   render();
   setTimeout(()=>document.getElementById("saveMessage").textContent="",2500);
 }
+
+// Escape HTML special characters before inserting user-provided text into generated HTML.
+// This helps prevent entered programme or exercise names from being interpreted as HTML.
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 
+// Connect the page controls to their actions.
+// These event handlers respond to tab changes, workout selection, saving,
+// programme editing, backup and restore, and other interface actions.
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
   document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
   b.classList.add("active"); document.getElementById(b.dataset.screen+"Screen").classList.add("active");
 });
+
+// When the workout day changes, discard the unsaved draft for the previous day
+// and display the newly selected day's exercises.
 document.getElementById("daySelect").onchange=e=>{activeDayId=e.target.value;draftWorkout={};renderWorkout();};
 document.getElementById("saveSession").onclick=saveWorkout;
 document.getElementById("newProgramme").onclick=openNewProgramme;
 document.getElementById("createOwnProgramme").onclick = openNewProgramme;
 document.getElementById("exportBackup").onclick=exportBackup;
 
+// Open the file picker so the user can select a backup to restore.
 document.getElementById("importBackup").onclick=()=>{
   document.getElementById("backupFile").click();
 };
 
+// Process the selected backup file, then clear the file input so the same file
+// can be selected again if needed.
 document.getElementById("backupFile").onchange=async e=>{
   const file=e.target.files[0];
   if(file) await importBackup(file);
@@ -809,6 +979,9 @@ document.getElementById("exerciseHistorySelect").onchange=renderExerciseHistory;
 document.getElementById("installHint").onclick=()=>alert("To install this app, open it in your phone's browser, then use the browser's menu or Share option and choose Add to Home Screen.");
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js?v=3").catch(()=>{});
 
+// Clear all saved app data in this browser after confirmation.
+// Reload the app so it starts again with the first-visit setup.
+// This removes the stored data for this app, so users should export a backup first.
 document.getElementById("resetTestData").onclick = () => {
   const confirmed = confirm(
     "Reset the app in this browser?\n\n" +
@@ -822,6 +995,8 @@ document.getElementById("resetTestData").onclick = () => {
   location.reload();
 };
 
+// Initialise the interface using saved data, load the exercise library,
+// and show the welcome screen if this browser has not used the app before.
 render();
 loadExerciseLibrary().then(render);
 
